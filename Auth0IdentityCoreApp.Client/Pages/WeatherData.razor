@@ -1,0 +1,77 @@
+@page "/weatherdata"
+@attribute [Authorize]
+@rendermode InteractiveAuto
+@inject HttpClient Http
+
+<PageTitle>Weather Data</PageTitle>
+
+<h1>Weather</h1>
+
+<p>Hello @Username!</p>
+
+<button class="btn btn-primary" @onclick="CallInternalApi">Call internal API</button>
+&nbsp;
+<button class="btn btn-primary" @onclick="CallExternalApi">Call external API</button>
+
+<p>&nbsp;</p>
+<p>@Message</p>
+
+@if (forecasts == null)
+{
+    <p><em>Choose the source of weather forecast data.</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private WeatherForecast[]? forecasts;
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+    private string Username = "";
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationState is not null)
+        {
+            var state = await authenticationState;
+
+            Username = state?.User?.Identity?.Name ?? string.Empty;
+        }
+        await base.OnInitializedAsync();
+    }
+
+    private async Task CallInternalApi()
+    {
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("api/internalData");
+        Message = "This data comes from an internal API.";
+    }
+
+    private async Task CallExternalApi()
+    {
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("api/externalData");
+        Message = "This data comes from an external API.";
+    }
+}
